@@ -10,7 +10,7 @@ support=1; //[1:Yes, 0:No]
 //Pulley type
 pulley=0; //[0:"MK7",1:"MK8"]
 //Part to generate
-part="assemble"; //["plate":All parts (print plate), "assemble":Assembled view (demonstrative only) "base":Base, "arm":Arm, "bracket":Extruder bracket plate, "idler":Idler]
+part="plate"; //["plate":All parts (print plate), "assemble":Assembled view (demonstrative only) "base":Base, "arm":Arm, "bracket":Extruder bracket plate, "idler":Idler]
 
 /* [Hidden] */
 motor_W=42;
@@ -48,7 +48,7 @@ hook_poly=[[-3,-3], [-3,3], [-5,3.5], [-5, 6], [1,6], [1,-3]];
 
 mount_screw_D=4;
 mount_screw_flange_D=9;
-motor_scre_flange_L=25;
+motor_screw_flange_L=25;
 mount_screw_from_right=25;
 mount_screw_from_top=50;
 
@@ -69,8 +69,17 @@ bracket_screw_D3=6;
 bracket_screw_L=16;
 bracket_screw_spacing=25;
 
+idler_T=11;
+idler_arm_L=motor_hole_spacing/2;
+bearing_D=13;
+bearing_L=5;
+idler_assembled_angle=asin(((motor_hole_spacing-bearing_D-filament)/2-hotend_Y)/idler_arm_L);
+
 support_T=0.4;
 supported_angle=35;
+
+$fn=40;
+spring_pos=[-idler_T/2-motor_wall_T-.5,-motor_W/2+11,motor_W-2];
 
 module fillet(r, h, pos, rot)
 {
@@ -154,6 +163,23 @@ module base()
 			rotate([0,-90,0])
 			linear_extrude(hook_L)
 				polygon(hook_poly);
+			//spring support
+			translate([0,-motor_hole_spacing/2,(motor_W+motor_hole_spacing)/2])
+			rotate([0,-90,0])
+			linear_extrude(idler_T+0.5+motor_wall_T)
+			union()
+			{
+				rotate([0,0,60])
+				union()
+				{
+					for(i=[0,1])
+					translate([0,-6*i,0])
+						circle(r=5,$fn=50);
+					translate([-10/2,-6,0])
+						square([10,6]);
+				}
+				polygon([[-5,0], [-5,16], [-2,16], [10,-2]]);
+			}
 		}
 		//hotend_slot
 		hotend_base_translated(extr=1,rot=[0,0,-90]);
@@ -176,7 +202,8 @@ module base()
 		//motor flange hole
 		translate([1-(1+support_T)*support,0,motor_W/2])
 			rotate([0,-90,0])
-				cylinder(r=motor_flange_D/2+1, h=motor_wall_T+2, $fn=80);
+				cylinder(r=motor_flange_D/2+1, h=30, $fn=80);
+		
 		//motor screw holes
 		for(i=[-1,1])
 			for(k=[-1,1])
@@ -185,23 +212,36 @@ module base()
 				union()
 				{
 					translate([0,0,(1+support_T)*support])
-						cylinder(r=motor_hole_D/2+.1, h=motor_wall_T+2, $fn=20);
+						cylinder(r=motor_hole_D/2+.1, h=30, $fn=20);
 					if(k==-1)
 					translate([0,0,motor_wall_T])
+						cylinder(r=7/2, h=30, $fn=40);
+					if(i==-1 && k==1)
+					translate([0,0,idler_T+0.5+motor_wall_T])
 						cylinder(r=7/2, h=30, $fn=40);
 					if(i==1 && k==-1)
 					translate([0,-7/2,motor_wall_T])
 						cube([7/2, 7, 30]);
 					
 				}
+		//dziura na sprê¿ynê, dziura na œrubkê, ³o¿ysko
 		//mount screw hole
 		translate([base_motor_L-mount_screw_from_right,-motor_W/2-1,motor_W-mount_screw_from_top])
 		rotate([-90,0,0])
 		union()
 		{
-			supported_cylinder(r=mount_screw_D/2, h=motor_W+motor_wall_T+2,z_rot=180,$fn=20);
-			supported_cylinder(r=mount_screw_flange_D/2, h=motor_scre_flange_L+1,z_rot=180,$fn=40);
+			supported_cylinder(r=mount_screw_D/2, h=motor_W+side_wall_T+2,z_rot=180,$fn=20);
+			supported_cylinder(r=mount_screw_flange_D/2, h=motor_screw_flange_L+1,z_rot=180,$fn=40);
 		}
+		//bearing slot
+		translate([-idler_T/2-motor_wall_T-.5, motor_hole_spacing/2, (motor_W+motor_hole_spacing)/2-idler_arm_L])
+			rotate([0,90,0])
+				cylinder(r=bearing_D/2+1, h=bearing_L+2, center=true);
+		//spring hole
+		translate(spring_pos)
+			rotate([-30,0,0])
+				supported_cylinder(r=4,h=3,z_rot=180);
+
 	}
 }
 
@@ -236,7 +276,7 @@ module idler()
 	difference()
 	{
 		
-		linear_extrude(11)
+		linear_extrude(idler_T)
 		union()
 		{
 			//base
@@ -275,14 +315,14 @@ module idler()
 		}
 		//screw holes
 		for (i=[0,1])
-		translate([15.5*i,0,-1])
+		translate([idler_arm_L*i,0,-1])
 		union()
 		{
 			cylinder(r=3.1/2, h=13);
 		}
 		//bearing slot
-		translate([15.5,0,11/2])
-			cylinder(r=7, h=5.2, center=true);
+		translate([idler_arm_L,0,-motor_wall_T-hotend_X-.5])
+			cylinder(r=bearing_D/2+0.5, h=bearing_L+0.2, center=true);
 		//filament slot
 		translate([-14,9,-motor_wall_T-hotend_X-.5])
 		rotate([90,0,90])
@@ -294,10 +334,10 @@ module idler()
 				circle(r=3.6/2);
 			square([3,3.6],center=true);
 		}
-		//spring cutout
+		//spring hole
 		rotate([0,-90,30])
-		translate([5.5,24,-1])
-		cylinder(r=4,h=3);
+			translate([idler_T/2,24,-1])
+				cylinder(r=4,h=3);
 	}
 }
 
@@ -345,7 +385,7 @@ module MK_pulley()
 	}
 }
 
-
+//debug
 section="no";
 
 intersection()
@@ -358,9 +398,14 @@ intersection()
 				translate([base_motor_L-base_L,0,-base_H])
 					hotend_bracket();
 				translate([-motor_wall_T-.5,motor_hole_spacing/2,(motor_W+motor_hole_spacing)/2])
+				rotate([-idler_assembled_angle,0,0])
 				rotate([180,90,0])
 				{
 					idler();
+					//bearing
+					#translate([idler_arm_L,0,idler_T/2])
+						cylinder(r=bearing_D/2,h=bearing_L,center=true);
+					//washer
 					#translate([0,0,-0.5])
 						cylinder(r=7/2,h=.5,$fn=20);
 				}
@@ -372,10 +417,14 @@ intersection()
 					translate([0,0,motor_L-hotend_X+pulley_teeth_from_top-pulley_L])
 						MK_pulley();
 				}
-				*hotend_base_translated();
+				#hotend_base_translated();
 				// filament
 				#translate([hotend_X,hotend_Y,-5])
-					cylinder(r=filament/2,h=55, $fn=6);
+					cylinder(r=filament/2,h=55, $fn=20);
+				//spring
+				%translate(spring_pos)
+					rotate([-30,0,0])
+						cylinder(r=3.5,h=13);
 		}
 		if (part=="base" || part=="plate")
 		{
@@ -396,10 +445,21 @@ intersection()
 					idler();
 		}
 	}
+	//debug
 	if (section=="y")
 	{
-		translate([0,60,0])
-		cube([100,100,100], center=true);
+		translate([0,85,0])
+			cube([150,150,200], center=true);
+	}
+	if (section=="x")
+	{
+		translate([65,0,0])
+			cube([150,150,200], center=true);
+	}
+	if (section=="z")
+	{
+		translate([0,0,100+21])
+			cube([150,150,200], center=true);
 	}
 }
 
