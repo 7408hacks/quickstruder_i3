@@ -1,18 +1,18 @@
 /*parameters*/
 
 /* [Global] */
-//Extruder type
-extruder_type="j-head"; //["j-head"]
+//Part to generate
+part="assemble"; //["plate":All parts (print plate), "assemble":Assembled view (demonstrative only), "base":Base, "arm":Arm, "bracket":Extruder bracket plate, "idler":Idler]
 //Filament diameter
 filament=3.0; //[3.0, 1.75]
 //Generate additional support for nicer printing (still have to use normal support!)
 support=1; //[1:Yes, 0:No]
 //Pulley type
 pulley=0; //[0:"MK7",1:"MK8"]
-//Part to generate
-part="plate"; //["plate":All parts (print plate), "assemble":Assembled view (demonstrative only) "base":Base, "arm":Arm, "bracket":Extruder bracket plate, "idler":Idler]
 
 /* [Hidden] */
+//Extruder type
+extruder_type="j-head"; //["j-head"]
 motor_W=42;
 motor_L=40;
 motor_shaft_D=5;
@@ -394,37 +394,37 @@ intersection()
 	{
 		if (part=="assemble")
 		{
-				base();
-				translate([base_motor_L-base_L,0,-base_H])
-					hotend_bracket();
-				translate([-motor_wall_T-.5,motor_hole_spacing/2,(motor_W+motor_hole_spacing)/2])
-				rotate([-idler_assembled_angle,0,0])
-				rotate([180,90,0])
-				{
-					idler();
-					//bearing
-					#translate([idler_arm_L,0,idler_T/2])
-						cylinder(r=bearing_D/2,h=bearing_L,center=true);
-					//washer
-					#translate([0,0,-0.5])
-						cylinder(r=7/2,h=.5,$fn=20);
-				}
-				translate([motor_L,0,motor_W/2])
-				rotate([0,-90,0])
-				#union()
-				{
-					NEMA17_motor();
-					translate([0,0,motor_L-hotend_X+pulley_teeth_from_top-pulley_L])
-						MK_pulley();
-				}
-				#hotend_base_translated();
-				// filament
-				#translate([hotend_X,hotend_Y,-5])
-					cylinder(r=filament/2,h=55, $fn=20);
-				//spring
-				%translate(spring_pos)
-					rotate([-30,0,0])
-						cylinder(r=3.5,h=13);
+			base();
+			translate([base_motor_L-base_L,0,-base_H])
+				hotend_bracket();
+			translate([-motor_wall_T-.5,motor_hole_spacing/2,(motor_W+motor_hole_spacing)/2])
+			rotate([-idler_assembled_angle,0,0])
+			rotate([180,90,0])
+			{
+				idler();
+				//bearing
+				#translate([idler_arm_L,0,idler_T/2])
+					cylinder(r=bearing_D/2,h=bearing_L,center=true);
+				//washer
+				#translate([0,0,-0.5])
+					cylinder(r=7/2,h=.5,$fn=20);
+			}
+			translate([motor_L,0,motor_W/2])
+			rotate([0,-90,0])
+			#union()
+			{
+				NEMA17_motor();
+				translate([0,0,motor_L-hotend_X+pulley_teeth_from_top-pulley_L])
+					MK_pulley();
+			}
+			#hotend_base_translated();
+			// filament
+			#translate([hotend_X,hotend_Y,-5])
+				cylinder(r=filament/2,h=55, $fn=20);
+			//spring
+			%translate(spring_pos)
+				rotate([-30,0,0])
+					cylinder(r=3.5,h=13);
 		}
 		if (part=="base" || part=="plate")
 		{
