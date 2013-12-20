@@ -7,11 +7,13 @@ part="plate"; //["plate":All parts (print plate), "assembly":Assembled view (dem
 //Filament diameter
 filament=3.0; //[3.0, 1.75]
 //Pulley type
-pulley=0; //[0:"MK7",1:"MK8"]
+pulley=1; //[0:"MK7",1:"MK8"]
 //
 version=0; //[0:right, 1:left]
 //Generate additional support for nicer printing (still have to use normal support!)
 support=1; //[1:Yes, 0:No]
+//Generate brim - structure to get less warping when printing with ABS
+brim=0; //[0:No, 1:Yes]
 
 /* [Hidden] */
 //Extruder type
@@ -82,6 +84,7 @@ idler_assembled_angle=asin(((motor_hole_spacing-bearing_D-filament)/2-hotend_Y)/
 
 support_T=0.4;
 supported_angle=35;
+
 
 $fn=40;
 spring_pos=[-idler_T/2-motor_wall_T-.5,-motor_W/2+11,motor_W-2];
@@ -185,6 +188,14 @@ module base()
 				}
 				polygon([[-5,0], [-5,16], [-2,16], [10,-2]]);
 			}
+			if (brim)
+			{
+				translate([base_motor_L-support_T, -motor_W/2-10, -base_H-10])
+					cube([support_T, 20, base_H+20]);
+				for (i=[0,1])
+					translate([base_motor_L-support_T, motor_W/2+side_wall_T-10, -base_H-10+(base_H+motor_W)*i])
+						cube([support_T, 20, 20]);
+			}
 		}
 		//hotend_slot
 		hotend_base_translated(extr=1,rot=[0,0,-90]);
@@ -227,7 +238,6 @@ module base()
 					if(i==1 && k==-1)
 					translate([0,-7/2,motor_wall_T])
 						cube([7/2, 7, 30]);
-					
 				}
 		//dziura na sprê¿ynê, dziura na œrubkê, ³o¿ysko
 		//mount screw hole
@@ -246,7 +256,6 @@ module base()
 		translate(spring_pos)
 			rotate([-30,0,0])
 				supported_cylinder(r=4,h=3,z_rot=180);
-
 	}
 }
 
@@ -256,18 +265,25 @@ module hotend_bracket()
 	{
 		//base
 		translate([0,motor_W/2+side_wall_T-bracket_W,0])
-		difference()
+		union()
 		{
-			cube([bracket_L,bracket_W,bracket_H]);
-			if (part=="assembly")
+			difference()
 			{
-				translate([-1,-1,-1])
-					cube([bracket_L+2, bracket_assembly_clearance+1, bracket_H+2]);
-				translate([-1, -1, bracket_H-bracket_assembly_clearance])
-					cube([bracket_L+2, bracket_W+2, 2]);
-				translate([bracket_L-bracket_assembly_clearance, -1, -1])
-					cube([2, bracket_W+2, bracket_H+2]);
+				cube([bracket_L,bracket_W,bracket_H]);
+				if (part=="assembly")
+				{
+					translate([-1,-1,-1])
+						cube([bracket_L+2, bracket_assembly_clearance+1, bracket_H+2]);
+					translate([-1, -1, bracket_H-bracket_assembly_clearance])
+						cube([bracket_L+2, bracket_W+2, 2]);
+					translate([bracket_L-bracket_assembly_clearance, -1, -1])
+						cube([2, bracket_W+2, bracket_H+2]);
+				}
 			}
+			if (brim)
+			for(i=[0,1])
+				translate([0,bracket_W*i-10,-10])
+					cube([support_T, 20, bracket_H+20]);
 		}
 		//screw holes
 		for(i=[-1,1])
@@ -453,13 +469,13 @@ intersection()
 		}
 		if (part=="bracket" || part=="plate")
 		{
-			translate([65,0,0])
+			translate([80,0,0])
 				rotate([0, -90, 0])
 					hotend_bracket();
 		}
 		if (part=="idler" || part=="plate")
 		{
-			translate([40,-30,5.5])
+			translate([40,-40,5.5])
 				rotate([90,-54.8,0])
 					idler();
 		}
