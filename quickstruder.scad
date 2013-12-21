@@ -3,7 +3,7 @@
 
 /* [Global] */
 //Part to generate
-part="plate"; //["plate":All parts (print plate), "assembly":Assembled view (demonstrative only), "base":Base, "bracket":Extruder bracket plate, "idler":Idler]
+part="plate"; //["plate":All parts (print plate), "assembly":Assembled view (demonstrative only), "base":Base, "bracket":Extruder bracket plate, "idler":Idler, "small":Small parts: idler & bracket]
 //Filament diameter
 filament=3.0; //[3.0, 1.75]
 //Pulley type
@@ -13,7 +13,16 @@ version=0; //[0:right, 1:left]
 //Generate additional support for nicer printing (still have to use normal support!)
 support=1; //[1:Yes, 0:No]
 //Generate brim - structure to get less warping when printing with ABS
-brim=0; //[0:No, 1:Yes]
+brim=1; //[0:No, 1:Yes]
+
+/* [Advanced] */
+
+support_T=0.4;
+supported_angle=45;
+support_cylinder_style="triangle"; //[trapezoid, triangle]
+
+bearing_D=13;
+bearing_L=5;
 
 /* [Hidden] */
 //Extruder type
@@ -37,7 +46,7 @@ pulley_effective_D=10.56 - 3.56*pulley;
 pulley_teeth_R=3;
 pulley_teeth_from_top=3.75;
 
-jhead_rotate_poly=[[0,0], [8,0], [8,5], [6,5], [6,9.5], [8,9.5], [8,37], [3.85,41.15], [3.85,52], [0.65,53.6], [0,53.6]];
+jhead_rotate_poly=[[0,0], [8.05,0], [8.05,5.05], [6.5,5.05], [6,5.55], [6,9], [6.5,9.5], [8.05,9.5], [8.05,37], [3.85,41.15], [3.85,52], [0.65,53.6], [0,53.6]];
 jhead_block_dim=[18.3, 14.9, 9.4];
 jhead_block_move=[-12.1,-7.45,39.5];
 hotend_D=16;
@@ -78,12 +87,7 @@ bracket_assembly_clearance=0.5;
 
 idler_T=11;
 idler_arm_L=motor_hole_spacing/2;
-bearing_D=13;
-bearing_L=5;
 idler_assembled_angle=asin(((motor_hole_spacing-bearing_D-filament)/2-hotend_Y)/idler_arm_L);
-
-support_T=0.4;
-supported_angle=35;
 
 
 $fn=40;
@@ -109,10 +113,17 @@ module supported_cylinder(r=1,h=1,z_rot=0, center=false)
 	union()
 	{
 		cylinder(r=r,h=h,center=center);
-		if(support)
+		if (support)
 		rotate([0,0,z_rot])
 		linear_extrude(height=h, center=center)
+		if(support_cylinder_style=="trapezoid")
+		{
 			polygon([[r*sin(sca),r*cos(sca)], [r, r*(cos(sca)-tan(sca)*(1-sin(sca)))], [r, -r*(cos(sca)-tan(sca)*(1-sin(sca)))],[r*sin(sca),-r*cos(sca)]]);
+		}
+		else if(support_cylinder_style=="triangle")
+		{
+			polygon([[r*sin(sca),r*cos(sca)],[r/sin(sca),0],[r*sin(sca),-r*cos(sca)]]);
+		}		
 	}
 }
 
@@ -282,8 +293,8 @@ module hotend_bracket()
 			}
 			if (brim)
 			for(i=[0,1])
-				translate([0,bracket_W*i-10,-10])
-					cube([support_T, 20, bracket_H+20]);
+				translate([0,bracket_W*i-5,-5])
+					cube([support_T, 10, bracket_H+10]);
 		}
 		//screw holes
 		for(i=[-1,1])
@@ -467,16 +478,16 @@ intersection()
 				rotate([0,90,0])
 					base();
 		}
-		if (part=="bracket" || part=="plate")
+		if (part=="bracket" || part=="plate" || part=="small")
 		{
-			translate([80,0,0])
-				rotate([0, -90, 0])
+			translate([20,60,0])
+				rotate([0, -90, 90])
 					hotend_bracket();
 		}
-		if (part=="idler" || part=="plate")
+		if (part=="idler" || part=="plate" || part=="small")
 		{
-			translate([40,-40,5.5])
-				rotate([90,-54.8,0])
+			translate([30,-50,0])
+				rotate([0,0,40])
 					idler();
 		}
 	}
