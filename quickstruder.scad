@@ -18,8 +18,8 @@ brim=1; //[0:No, 1:Yes]
 /* [Advanced] */
 
 support_T=0.25;
-supported_angle=45;
-support_cylinder_style="triangle"; //[trapezoid, triangle]
+teardrop_angle=45;
+support_cylinder_style="teardrop"; //[trapezoid, teardrop]
 
 bearing_D=13;
 bearing_L=5;
@@ -28,7 +28,7 @@ bearing_L=5;
 //Extruder type
 extruder_type="j-head"; //["j-head"]
 
-motor_W=42;
+motor_W=42.4;
 motor_L=40;
 motor_shaft_D=5;
 motor_shaft_L=23;
@@ -36,7 +36,7 @@ motor_flange_D=22;
 motor_flange_L=2;
 motor_connector_dim=[6,17,10];
 motor_hole_spacing=31;
-motor_hole_D=3;
+motor_hole_D=3.5;
 motor_fillet_R=5;
 
 pulley_D=12.6 - 4.7*pulley;
@@ -91,7 +91,7 @@ idler_assembled_angle=asin(((motor_hole_spacing-bearing_D-filament)/2-hotend_Y)/
 
 
 $fn=40;
-spring_pos=[-idler_T/2-motor_wall_T-.5,-motor_W/2+11,motor_W-2];
+spring_pos=[-idler_T/2-motor_wall_T-.5,-motor_W/2+10.5,motor_W-2.5];
 
 module fillet(r, h, pos, rot)
 {
@@ -106,7 +106,7 @@ module fillet(r, h, pos, rot)
 		}
 }
 
-sca=supported_angle;
+t_ang=teardrop_angle;
 
 module supported_cylinder(r=1,h=1,z_rot=0, center=false)
 {
@@ -118,11 +118,11 @@ module supported_cylinder(r=1,h=1,z_rot=0, center=false)
 		linear_extrude(height=h, center=center)
 		if(support_cylinder_style=="trapezoid")
 		{
-			polygon([[r*sin(sca),r*cos(sca)], [r, r*(cos(sca)-tan(sca)*(1-sin(sca)))], [r, -r*(cos(sca)-tan(sca)*(1-sin(sca)))],[r*sin(sca),-r*cos(sca)]]);
+			polygon([[r*sin(t_ang),r*cos(t_ang)], [r, r*(cos(t_ang)-tan(t_ang)*(1-sin(t_ang)))], [r, -r*(cos(t_ang)-tan(t_ang)*(1-sin(t_ang)))],[r*sin(t_ang),-r*cos(t_ang)]]);
 		}
-		else if(support_cylinder_style=="triangle")
+		else if(support_cylinder_style=="teardrop")
 		{
-			polygon([[r*sin(sca),r*cos(sca)],[r/sin(sca),0],[r*sin(sca),-r*cos(sca)]]);
+			polygon([[r*sin(t_ang),r*cos(t_ang)],[r/sin(t_ang),0],[r*sin(t_ang),-r*cos(t_ang)]]);
 		}		
 	}
 }
@@ -242,15 +242,14 @@ module base()
 						cylinder(r=motor_hole_D/2+.1, h=30, $fn=20);
 					if(k==-1)
 					translate([0,0,motor_wall_T])
-						cylinder(r=7/2, h=30, $fn=40);
+						cylinder(r=8/2, h=30, $fn=40);
 					if(i==-1 && k==1)
 					translate([0,0,idler_T+0.5+motor_wall_T])
-						cylinder(r=7/2, h=30, $fn=40);
+						cylinder(r=8/2, h=30, $fn=40);
 					if(i==1 && k==-1)
-					translate([0,-7/2,motor_wall_T])
-						cube([7/2, 7, 30]);
+					translate([0,-8/2,motor_wall_T])
+						cube([8/2, 8, 30]);
 				}
-		//dziura na sprê¿ynê, dziura na œrubkê, ³o¿ysko
 		//mount screw hole
 		translate([base_motor_L-mount_screw_from_right,-motor_W/2-1,motor_W-mount_screw_from_top])
 		rotate([-90,0,0])
@@ -266,7 +265,7 @@ module base()
 		//spring hole
 		translate(spring_pos)
 			rotate([-30,0,0])
-				supported_cylinder(r=4,h=3,z_rot=180);
+				cylinder(r=4.5,h=3,z_rot=180);
 	}
 }
 
@@ -368,20 +367,20 @@ module idler()
 		translate([idler_arm_L,0,-motor_wall_T-hotend_X-.5])
 			cylinder(r=bearing_D/2+0.5, h=bearing_L+0.2, center=true);
 		//filament slot
-		translate([-14,9,-motor_wall_T-hotend_X-.5])
+		translate([-20,10.5,-motor_wall_T-hotend_X-.5])
 		rotate([90,0,90])
-		linear_extrude(height=15)
+		linear_extrude(height=25)
 		union()
 		{
 			for(i=[-1,1])
-			translate([1.5*i,0,0])
+			translate([3*i,0,0])
 				circle(r=3.6/2);
-			square([3,3.6],center=true);
+			square([6,3.6],center=true);
 		}
 		//spring hole
 		rotate([0,-90,30])
-			translate([idler_T/2,24,-1])
-				cylinder(r=4,h=3);
+			translate([idler_T/2,24,-1.5])
+				cylinder(r=4.5,h=3);
 	}
 }
 
@@ -466,7 +465,7 @@ intersection()
 				#hotend_base_translated();
 				// filament
 				#translate([hotend_X,hotend_Y,-5])
-					cylinder(r=filament/2,h=55, $fn=20);
+					cylinder(r=filament/2,h=65, $fn=20);
 				//spring
 				%translate(spring_pos)
 					rotate([-30,0,0])
