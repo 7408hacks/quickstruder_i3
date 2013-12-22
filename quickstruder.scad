@@ -3,7 +3,7 @@
 
 /* [Global] */
 //Part to generate
-part="plate"; //["plate":All parts (print plate), "assembly":Assembled view (demonstrative only), "base":Base, "bracket":Extruder bracket plate, "idler":Idler, "small":Small parts: idler & bracket]
+part="assembly"; //["plate":All parts (print plate), "assembly":Assembled view (demonstrative only), "base":Base, "bracket":Extruder bracket plate, "idler":Idler, "small":Small parts: idler & bracket]
 //Filament diameter
 filament=3.0; //[3.0, 1.75]
 //Pulley type
@@ -17,7 +17,7 @@ brim=1; //[0:No, 1:Yes]
 
 /* [Advanced] */
 
-support_T=0.4;
+support_T=0.25;
 supported_angle=45;
 support_cylinder_style="triangle"; //[trapezoid, triangle]
 
@@ -474,20 +474,20 @@ intersection()
 		}
 		if (part=="base" || part=="plate")
 		{
-			translate([0,0,base_motor_L])
+			translate([0,40,base_motor_L])
 				rotate([0,90,0])
 					base();
 		}
 		if (part=="bracket" || part=="plate" || part=="small")
 		{
-			translate([20,60,0])
+			translate([20,0,0])
 				rotate([0, -90, 90])
 					hotend_bracket();
 		}
 		if (part=="idler" || part=="plate" || part=="small")
 		{
-			translate([30,-50,0])
-				rotate([0,0,40])
+			translate([25,-40,0])
+				rotate([0,0,35])
 					idler();
 		}
 	}
