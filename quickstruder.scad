@@ -1,9 +1,9 @@
 /*parameters*/
 // preview[view:south west, tilt:side]
 
-/* [Global] */
+/* [Basic] */
 //Part to generate
-part="base"; //["plate":All parts (print plate), "assembly":Assembled view (demonstrative only), "base":Base, "bracket":Extruder bracket plate, "idler":Idler, "hotend_fan_duct":Hotend Fan Duct, "small":Small parts: idler & bracket]
+part="assembly"; //["plate":All parts (print plate), "assembly":Assembled view (demonstrative only), "base":Base, "bracket":Extruder bracket plate, "idler":Idler, "hotend_fan_duct":Hotend Fan Duct, "small":Small parts: idler & bracket]
 //Filament diameter
 filament=3.0; //[3.0, 1.75]
 //Pulley type
@@ -83,7 +83,7 @@ bracket_screw_D2=3;
 bracket_screw_D3=6;
 bracket_screw_L=16;
 bracket_screw_spacing=25;
-bracket_assembly_clearance=0.5;
+bracket_assembly_clearance=0.2;
 bracket_x_clearance=0.3;
 
 idler_T=11;
@@ -97,11 +97,12 @@ hotend_fan_screw_spacing=32;
 hotend_fan_screw_D=3.5;
 hotend_fan_duct_wall_T=2;
 hotend_fan_duct_H=24;
-hotend_fan_duct_W=24;
+hotend_fan_duct_W=26;
 hotend_fan_z=8;
 
 $fn=40;
-spring_pos=[-idler_T/2-motor_wall_T-idler_washer_T,-motor_W/2+10.5,motor_W-2.5];
+spring_pos=[-idler_T/2-motor_wall_T-idler_washer_T,-motor_W/2+2,motor_W+0];
+spring_rot=-38;
 
 module fillet(r, h, pos, rot)
 {
@@ -122,25 +123,25 @@ module __rounded_cube(dim, r, rounded)
 	{
 		cube(dim, center=true);
 		if(search("x", rounded))
-			for(y=[-1,1])
-			for(z=[-1,1])
-			scale([1,y,z])
+			for(y=[0,1])
+			for(z=[0,1])
+			mirror([0,y,z])
 			fillet(r=r, h=dim[0]+2, pos=[0, dim[1]/2, dim[2]/2], rot=[0,-90,0]);
 		if(search("y", rounded))
-			for(x=[-1,1])
-			for(z=[-1,1])
-			scale([x,1,z])
+			for(x=[0,1])
+			for(z=[0,1])
+			mirror([x,0,z])
 			fillet(r=r, h=dim[1]+2, pos=[dim[0]/2, 0, dim[2]/2], rot=[90,0,0]);
 		if(search("z", rounded))
-			for(x=[-1,1])
-			for(y=[-1,1])
-			scale([x,y,1])
+			for(x=[0,1])
+			for(y=[0,1])
+			mirror([x,y,0])
 			fillet(r=r, h=dim[2]+2, pos=[dim[0]/2, dim[1]/2, 0], rot=[0,0,0]);
 		if(rounded=="xyz")
-			for(x=[-1,1])
-			for(y=[-1,1])
-			for(z=[-1,1])
-			scale([x,y,z])
+			for(x=[0,1])
+			for(y=[0,1])
+			for(z=[0,1])
+			mirror([x,y,z])
 			translate(dim/2)
 			translate([-r,-r,-r])
 			difference()
@@ -217,8 +218,8 @@ module hotend_base(extr=0)
 			color("DimGray") rotate_extrude(convexity = 50, $fn=50)
 				polygon(jhead_rotate_poly);
 			if (extr)
-				for(i=[-1,1])
-				scale([i,1,1])
+				for(i=[0,1])
+				mirror([i,0,0])
 				rotate([90,0,0])
 				linear_extrude(height=50)
 					polygon(jhead_rotate_poly);
@@ -237,19 +238,20 @@ module hotend_base_translated(extr=0,rot=[0,0,0])
 
 module base()
 {
+	color("SteelBlue")
 	difference()
 	{
 		union()
 		{
 			//base
 			translate([base_motor_L-base_L,-motor_W/2,-base_H])
-				cube([base_L, motor_W+side_wall_T, base_H]);
+				rounded_cube([base_L, motor_W+side_wall_T, base_H], rounded="x", r=0.5);
 			//motor wall
 			translate([-motor_wall_T, -motor_W/2, -1])
 				cube([motor_wall_T, motor_W+1, motor_W+1]);
 			//side wall
 			translate([base_motor_L-base_L, motor_W/2, -1])
-				cube([base_L, side_wall_T, motor_W+1]);
+				rounded_cube([base_L, side_wall_T, motor_W+1], rounded="x", r=0.5);
 			//filament guide
 			translate([hotend_X,hotend_Y,-1])
 			{
@@ -266,18 +268,21 @@ module base()
 			translate([0,-motor_hole_spacing/2,(motor_W+motor_hole_spacing)/2])
 			rotate([0,-90,0])
 			linear_extrude(height=idler_T+idler_washer_T+motor_wall_T)
-			union()
+			hull()
 			{
-				rotate([0,0,60])
-				union()
-				{
-					for(i=[0,1])
-					translate([0,-6*i,0])
-						circle(r=5,$fn=50);
-					translate([-10/2,-6,0])
-						square([10,6]);
-				}
-				polygon([[-5,0], [-5,16], [-2,16], [10,-2]]);
+				circle(r=6);
+				translate([12,-8,0])
+					circle(r=5);
+				translate([0,13,0])
+					circle(r=2);
+			}
+			//idler bracket
+			translate([base_motor_L-base_L,motor_hole_spacing/2,(motor_W+motor_hole_spacing)/2-6])
+			{
+				cube([base_L-base_motor_L-motor_wall_T-idler_T-2*idler_washer_T-0.2,(motor_W-motor_hole_spacing)/2+1,12]);
+				translate([0,0,6])
+				rotate([0,90,0])
+					cylinder(r=6, h=base_L-base_motor_L-motor_wall_T-idler_T-2*idler_washer_T-0.2);
 			}
 			//Hotend fan duct
 			_hotend_fan_duct_block(inner=0);
@@ -326,7 +331,10 @@ module base()
 					translate([0,0,motor_wall_T])
 						cylinder(r=8/2, h=30, $fn=40);
 					if(i==-1 && k==1)
-					translate([0,0,idler_T+0.5+motor_wall_T])
+					translate([0,0,idler_T+idler_washer_T+motor_wall_T])
+						cylinder(r=8/2, h=30, $fn=40);
+					if(i==1 && k==1)
+					translate([0,0,base_L-base_motor_L])
 						cylinder(r=8/2, h=30, $fn=40);
 					if(i==1 && k==-1)
 					translate([0,-8/2,motor_wall_T])
@@ -346,8 +354,8 @@ module base()
 				cylinder(r=bearing_D/2+1, h=bearing_L+2, center=true);
 		//spring hole
 		translate(spring_pos)
-			rotate([-30,0,0])
-				cylinder(r=4.5,h=3,z_rot=180);
+			rotate([spring_rot,0,0])
+				cylinder(r=4.5,h=10,z_rot=180);
 		//Hotend fan duct	
 		_hotend_fan_duct_block(inner=1);
 	}
@@ -355,6 +363,7 @@ module base()
 
 module hotend_bracket()
 {
+	color("SteelBlue")
 	difference()
 	{
 		//base
@@ -363,7 +372,7 @@ module hotend_bracket()
 		{
 			difference()
 			{
-				cube([bracket_L-bracket_x_clearance,bracket_W,bracket_H]);
+				rounded_cube([bracket_L-bracket_x_clearance,bracket_W,bracket_H], r=1, rounded="x");
 				if (part=="assembly")
 				{
 					translate([-1,-1,-1])
@@ -399,7 +408,7 @@ module hotend_bracket()
 
 module idler()
 {
-	$fn=40;
+	color("SteelBlue")
 	difference()
 	{
 		
@@ -428,7 +437,7 @@ module idler()
 							square([16,8]);
 					}
 					rotate([0,0,30])
-					scale([1,-1,1])
+					mirror([0,1,0])
 					union()
 					{
 						translate()
@@ -438,7 +447,7 @@ module idler()
 					}
 				}
 			}
-			polygon([[0,5.5], [-10,15], [-5,0]]);
+			polygon([[1,5.5], [-18,31], [-5,0]]);
 		}
 		//screw holes
 		for (i=[0,1])
@@ -463,68 +472,11 @@ module idler()
 		}
 		//spring hole
 		rotate([0,-90,30])
-			translate([idler_T/2,24,-1.5])
+			translate([idler_T/2,31,-1.5])
 				cylinder(r=4.5,h=3);
 	}
 }
 
-/* deprecated
-module hotend_fan_duct()
-{
-
-	union()
-	{
-		translate([0,-hotend_fan_D/2,0])
-		difference()
-		{
-			union()
-			{
-				cube([hotend_fan_from_hotend,hotend_fan_D,hotend_fan_duct_H]);
-				translate([hotend_fan_from_hotend,hotend_fan_D/2,0])
-				intersection()
-				{
-					cylinder(r=hotend_fan_D/2, h=hotend_fan_duct_H);
-					translate([-1,-hotend_fan_D/2-1,-1])
-						cube([hotend_fan_D/2+2,hotend_fan_D+2,hotend_fan_duct_H+2]);
-				}
-			}
-			union()
-			{
-				translate([-1,hotend_fan_duct_wall_T,hotend_fan_duct_wall_T])
-					cube([hotend_fan_from_hotend+1,hotend_fan_D-2*hotend_fan_duct_wall_T,hotend_fan_duct_H-2*hotend_fan_duct_wall_T]);
-				translate([hotend_fan_from_hotend,hotend_fan_D/2,hotend_fan_duct_wall_T])
-				intersection()
-				{
-					cylinder(r=hotend_fan_D/2-hotend_fan_duct_wall_T, h=hotend_fan_duct_H-2*hotend_fan_duct_wall_T);
-					translate([-1,-hotend_fan_D/2-1,-1])
-						cube([hotend_fan_D/2+2,hotend_fan_D+2,hotend_fan_duct_H+2]);
-				}
-				translate([hotend_fan_from_hotend,hotend_fan_D/2,-1])
-					cylinder(r=hotend_D/2+0.1,h=hotend_fan_duct_H+2);
-				translate([hotend_fan_from_hotend,hotend_fan_D/2,hotend_fan_duct_H/2])
-					cube([hotend_fan_D+1,15,hotend_fan_duct_H-2*hotend_fan_duct_wall_T], center=true);
-			}			
-			
-		}
-		translate([hotend_fan_duct_wall_T/2,0,hotend_fan_D/2+hotend_fan_z])
-		rotate([0,-90,0])
-		difference()
-		{
-			cube([hotend_fan_D,hotend_fan_D,hotend_fan_duct_wall_T], center=true);
-			intersection()
-			{
-				cylinder(r=hotend_fan_D/2-hotend_fan_duct_wall_T, h=hotend_fan_duct_wall_T+2, center=true);
-				translate([-hotend_fan_D/2-hotend_fan_z,-hotend_fan_D/2,-hotend_fan_duct_wall_T/2-2])
-					cube([hotend_fan_duct_H-hotend_fan_duct_wall_T,hotend_fan_D,hotend_fan_duct_wall_T+4]);
-			}
-			for(i=[-1,1])
-			for(k=[-1,1])
-			translate([hotend_fan_screw_spacing/2*i, hotend_fan_screw_spacing/2*k,0])
-				cylinder(r=hotend_fan_screw_D/2, h=hotend_fan_T+2, center=true);
-		}
-	}
-}
-*/
 module NEMA17_motor()
 {
 	translate([0,0,motor_L/2])
@@ -532,15 +484,7 @@ module NEMA17_motor()
 	{
 		// base
 		color("DimGray") 
-		difference()
-		{
-			cube([motor_W,motor_W,motor_L], center=true);
-			for(angle=[0:90:359])
-			{
-				rotate([0,0,angle])
-					fillet(motor_fillet_R,motor_L+2,[motor_W/2,motor_W/2,0],[0,0,0], $fn=50);
-			}
-		}
+		rounded_cube([motor_W,motor_W,motor_L], center=true, rounded="z", r=motor_fillet_R);
 		//flange
 		color("Silver")
 		cylinder(r=motor_flange_D/2,h=motor_L/2+motor_flange_L, $fn=50);
@@ -549,8 +493,8 @@ module NEMA17_motor()
 		cylinder(r=motor_shaft_D/2,h=motor_L/2+motor_flange_L+motor_shaft_L, $fn=50);
 		//connector
 		color("WhiteSmoke")
-		translate([0,-motor_connector_dim[1]/2,-motor_L/2])
-			cube([motor_connector_dim[0]+motor_W/2,motor_connector_dim[1],motor_connector_dim[2]]);
+		translate([motor_W/2,-motor_connector_dim[1]/2,-motor_L/2])
+			cube([motor_connector_dim[0],motor_connector_dim[1],motor_connector_dim[2]]);
 	}
 }
 
@@ -591,7 +535,7 @@ module hotend_fan()
 }
 
 //debug
-section="no";
+section="";
 
 module generate()
 {
@@ -633,9 +577,10 @@ intersection()
 				translate([hotend_X,hotend_Y,-5])
 					cylinder(r=filament/2,h=65, $fn=20);
 				//spring
+				color("Silver")
 				translate(spring_pos)
-					rotate([-30,0,0])
-						cylinder(r=3.5,h=13);
+					rotate([spring_rot,0,0])
+						cylinder(r=3.5,h=17);
 				translate([base_motor_L, side_wall_T/2, -hotend_fan_D-base_H+hotend_fan_z])
 				hotend_fan();
 		}
@@ -657,14 +602,6 @@ intersection()
 				rotate([0,0,35])
 					idler();
 		}
-/*
-		if (part=="hotend_fan_duct" || part=="plate")
-		{
-			translate([-40,45,0])
-				rotate([0,-90,0])
-					hotend_fan_duct();
-		}
-*/
 	}
 	//debug
 	if (section=="y")
@@ -686,7 +623,7 @@ intersection()
 }
 
 if (version) // mirror
-	scale([-1,1,1])
+	mirror([1,0,0])
 		generate();
 else
 	generate();
