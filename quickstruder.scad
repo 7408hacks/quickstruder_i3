@@ -3,7 +3,7 @@
 
 /* [Basic] */
 //Part to generate
-part="assembly"; //["plate":All parts (print plate), "assembly":Assembled view (demonstrative only), "base":Base, "bracket":Extruder bracket plate, "idler":Idler, "hotend_fan_duct":Hotend Fan Duct, "small":Small parts: idler & bracket]
+part="plate"; //["plate":All parts (print plate), "assembly":Assembled view (demonstrative only), "base":Base, "bracket":Extruder bracket plate, "idler":Idler, "hotend_fan_duct":Hotend Fan Duct, "small":Small parts: idler & bracket]
 //Filament diameter
 filament=3.0; //[3.0, 1.75]
 //Pulley type
@@ -193,11 +193,11 @@ module _hotend_fan_duct_block(inner=0)
 		{
 			translate([base_motor_L-hotend_fan_duct_wall_T/2-hotend_fan_T+inner/2,(side_wall_T)/2,-hotend_fan_D/2-base_H+hotend_fan_z])
 				rounded_cube([hotend_fan_duct_wall_T+inner, hotend_fan_D-2*hotend_fan_duct_wall_T*inner, hotend_fan_D-2*hotend_fan_duct_wall_T*inner], center=true, r=1, rounded="x");
-			translate([hotend_X+hotend_D/2+3+1/2, hotend_Y, -hotend_fan_duct_H/2-base_H+hotend_fan_duct_wall_T*inner/2])
-				rounded_cube([1, hotend_fan_duct_W-2*hotend_fan_duct_wall_T*inner ,hotend_fan_duct_H-hotend_fan_duct_wall_T*inner], center=true, r=1, rounded="x");
+			translate([hotend_X+hotend_D/2+3+1/2, hotend_Y, -hotend_fan_duct_H/2-base_H+hotend_fan_duct_wall_T/2])
+				rounded_cube([1, hotend_fan_duct_W-2*hotend_fan_duct_wall_T*inner,hotend_fan_duct_H-hotend_fan_duct_wall_T*(inner?1:-1)], center=true, r=1, rounded="x");
 		}
-		translate([hotend_X+hotend_D/2+3-(hotend_D/2+3+1)/2, hotend_Y, -hotend_fan_duct_H/2-base_H+hotend_fan_duct_wall_T*inner/2])
-			rounded_cube([hotend_D/2+3+1+inner,hotend_fan_duct_W-2*hotend_fan_duct_wall_T*inner ,hotend_fan_duct_H-hotend_fan_duct_wall_T*inner], center=true, r=1, rounded="x"); 
+		translate([hotend_X+hotend_D/2+3-(hotend_D/2+3+1)/2, hotend_Y, -hotend_fan_duct_H/2-base_H+hotend_fan_duct_wall_T/2])
+			rounded_cube([hotend_D/2+3+1+inner,hotend_fan_duct_W-2*hotend_fan_duct_wall_T*inner,hotend_fan_duct_H-hotend_fan_duct_wall_T*(inner?1:-1)], center=true, r=1, rounded="x"); 
 		if(inner)
 		{
 			translate([base_motor_L-hotend_fan_T/2+1/2,(side_wall_T)/2,-hotend_fan_D/2-base_H+hotend_fan_z])
