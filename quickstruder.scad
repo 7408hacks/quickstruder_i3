@@ -7,13 +7,13 @@ part="plate"; //["plate":All parts (print plate), "assembly":Assembled view (dem
 //Filament diameter
 filament=3.0; //[3.0, 1.75]
 //Pulley type
-pulley=1; //[0:"MK7",1:"MK8"]
+pulley=0; //[0:"MK7",1:"MK8"]
 //
 version=0; //[0:right, 1:left]
 //Generate additional support for nicer printing (still have to use normal support!)
 support=1; //[1:Yes, 0:No]
 //Generate brim - structure to get less warping when printing with ABS
-brim=0; //[0:No, 1:Yes]
+brim=1; //[0:No, 1:Yes]
 
 /* [Advanced] */
 
@@ -123,25 +123,25 @@ module __rounded_cube(dim, r, rounded)
 	{
 		cube(dim, center=true);
 		if(search("x", rounded))
-			for(y=[0,1])
-			for(z=[0,1])
-			mirror([0,y,z])
+			for(y=[-1,1])
+			for(z=[-1,1])
+			scale([1,y,z])
 			fillet(r=r, h=dim[0]+2, pos=[0, dim[1]/2, dim[2]/2], rot=[0,-90,0]);
 		if(search("y", rounded))
-			for(x=[0,1])
-			for(z=[0,1])
-			mirror([x,0,z])
+			for(x=[-1,1])
+			for(z=[-1,1])
+			scale([x,1,z])
 			fillet(r=r, h=dim[1]+2, pos=[dim[0]/2, 0, dim[2]/2], rot=[90,0,0]);
 		if(search("z", rounded))
-			for(x=[0,1])
-			for(y=[0,1])
-			mirror([x,y,0])
+			for(x=[-1,1])
+			for(y=[-1,1])
+			scale([x,y,1])
 			fillet(r=r, h=dim[2]+2, pos=[dim[0]/2, dim[1]/2, 0], rot=[0,0,0]);
 		if(rounded=="xyz")
-			for(x=[0,1])
-			for(y=[0,1])
-			for(z=[0,1])
-			mirror([x,y,z])
+			for(x=[-1,1])
+			for(y=[-1,1])
+			for(z=[-1,1])
+			scale([x,y,z])
 			translate(dim/2)
 			translate([-r,-r,-r])
 			difference()
