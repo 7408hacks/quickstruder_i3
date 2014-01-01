@@ -22,7 +22,7 @@ teardrop_angle=45;
 support_cylinder_style="teardrop"; //[trapezoid, teardrop]
 
 bearing_D=13;
-bearing_L=5;
+bearing_L=5.3;
 
 /* [Hidden] */
 //Extruder type
@@ -100,142 +100,107 @@ hotend_fan_duct_H=24;
 hotend_fan_duct_W=26;
 hotend_fan_z=8;
 
-$fn=40;
 spring_pos=[-idler_T/2-motor_wall_T-idler_washer_T,-motor_W/2+2,motor_W+0];
 spring_rot=-38;
 
-module fillet(r, h, pos, rot)
-{
-	translate(pos)
-	rotate(rot)
-	translate([-r,-r,0])
-		difference()
-		{
-			translate([0,0,-h/2])
-				cube([r+1,r+1,h]);
-			cylinder(r=r, h=h+2, center=true);
-		}
-}
+$fn=40;
 
-module __rounded_cube(dim, r, rounded)
-{
-	difference()
-	{
-		cube(dim, center=true);
-		if(search("x", rounded))
-			for(y=[-1,1])
-			for(z=[-1,1])
-			scale([1,y,z])
-			fillet(r=r, h=dim[0]+2, pos=[0, dim[1]/2, dim[2]/2], rot=[0,-90,0]);
-		if(search("y", rounded))
-			for(x=[-1,1])
-			for(z=[-1,1])
-			scale([x,1,z])
-			fillet(r=r, h=dim[1]+2, pos=[dim[0]/2, 0, dim[2]/2], rot=[90,0,0]);
-		if(search("z", rounded))
-			for(x=[-1,1])
-			for(y=[-1,1])
-			scale([x,y,1])
-			fillet(r=r, h=dim[2]+2, pos=[dim[0]/2, dim[1]/2, 0], rot=[0,0,0]);
-		if(rounded=="xyz")
-			for(x=[-1,1])
-			for(y=[-1,1])
-			for(z=[-1,1])
-			scale([x,y,z])
-			translate(dim/2)
-			translate([-r,-r,-r])
-			difference()
-			{
-				cube([r+1,r+1,r+1]);
-				sphere(r=r);
-			}
-	}
-}
+//debug
+section="";
 
-module rounded_cube(dim=[], r=0, rounded="", center=false)
-{
-	if(center)
-	{
-		__rounded_cube(dim=dim, r=r, rounded=rounded);
-	}
-	else
-	{
-		translate(dim/2)
-		__rounded_cube(dim=dim, r=r, rounded=rounded);
-	}
-}
-t_ang=teardrop_angle;
+if (version) // mirror
+	mirror([1,0,0])
+		generate();
+else
+	generate();
 
-module supported_cylinder(r=1,h=1,z_rot=0, center=false)
+//Generate parts
+module generate()
+{
+intersection()
 {
 	union()
 	{
-		cylinder(r=r,h=h,center=center);
-		if (support)
-		rotate([0,0,z_rot])
-		linear_extrude(height=h, center=center)
-		if(support_cylinder_style=="trapezoid")
+		if (part=="assembly")
 		{
-			polygon([[r*sin(t_ang),r*cos(t_ang)], [r, r*(cos(t_ang)-tan(t_ang)*(1-sin(t_ang)))], [r, -r*(cos(t_ang)-tan(t_ang)*(1-sin(t_ang)))],[r*sin(t_ang),-r*cos(t_ang)]]);
+				base();
+				translate([base_motor_L-base_L,0,-base_H])
+					hotend_bracket();
+				translate([-motor_wall_T-idler_washer_T,motor_hole_spacing/2,(motor_W+motor_hole_spacing)/2])
+				rotate([-idler_assembled_angle,0,0])
+				rotate([180,90,0])
+				{
+					idler();
+					//bearing
+					color("Silver")
+					translate([idler_arm_L,0,idler_T/2])
+						cylinder(r=bearing_D/2,h=bearing_L,center=true);
+					//washers
+					color("Silver")
+					for (i=[0,1])
+					translate([0,0,-idler_washer_T+(idler_T+idler_washer_T)*i])
+						cylinder(r=7/2,h=idler_washer_T,$fn=20);
+				}
+				translate([motor_L,0,motor_W/2])
+				rotate([0,-90,0])
+				union()
+				{
+					NEMA17_motor();
+					translate([0,0,motor_L-hotend_X+pulley_teeth_from_top-pulley_L])
+						MK_pulley();
+				}
+				hotend_base_translated(rot=[0,0,180]);
+				// filament
+				color("Red")
+				translate([hotend_X,hotend_Y,-5])
+					cylinder(r=filament/2,h=65, $fn=20);
+				//spring
+				color("Silver")
+				translate(spring_pos)
+					rotate([spring_rot,0,0])
+						cylinder(r=3.5,h=17);
+				translate([base_motor_L, side_wall_T/2, -hotend_fan_D-base_H+hotend_fan_z])
+				hotend_fan();
 		}
-		else if(support_cylinder_style=="teardrop")
+		if (part=="base" || part=="plate")
 		{
-			polygon([[r*sin(t_ang),r*cos(t_ang)],[r/sin(t_ang),0],[r*sin(t_ang),-r*cos(t_ang)]]);
-		}		
+			translate([0,40,base_motor_L])
+				rotate([0,90,0])
+					base();
+		}
+		if (part=="bracket" || part=="plate" || part=="small")
+		{
+			translate([20,0,0])
+				rotate([0, -90, 90])
+					hotend_bracket();
+		}
+		if (part=="idler" || part=="plate" || part=="small")
+		{
+			translate([25,-40,0])
+				rotate([0,0,35])
+					idler();
+		}
+	}
+	//debug
+	if (section=="y")
+	{
+		translate([0,85,0])
+			cube([150,150,200], center=true);
+	}
+	if (section=="x")
+	{
+		translate([65,0,0])
+			cube([150,150,200], center=true);
+	}
+	if (section=="z")
+	{
+		translate([0,0,100+21])
+			cube([150,150,200], center=true);
 	}
 }
-
-module _hotend_fan_duct_block(inner=0)
-{
-	union()
-	{
-		hull()
-		{
-			translate([base_motor_L-hotend_fan_duct_wall_T/2-hotend_fan_T+inner/2,(side_wall_T)/2,-hotend_fan_D/2-base_H+hotend_fan_z])
-				rounded_cube([hotend_fan_duct_wall_T+inner, hotend_fan_D-2*hotend_fan_duct_wall_T*inner, hotend_fan_D-2*hotend_fan_duct_wall_T*inner], center=true, r=1, rounded="x");
-			translate([hotend_X+hotend_D/2+3+1/2, hotend_Y, -hotend_fan_duct_H/2-base_H+hotend_fan_duct_wall_T/2])
-				rounded_cube([1, hotend_fan_duct_W-2*hotend_fan_duct_wall_T*inner,hotend_fan_duct_H-hotend_fan_duct_wall_T*(inner?1:-1)], center=true, r=1, rounded="x");
-		}
-		translate([hotend_X+hotend_D/2+3-(hotend_D/2+3+1)/2, hotend_Y, -hotend_fan_duct_H/2-base_H+hotend_fan_duct_wall_T/2])
-			rounded_cube([hotend_D/2+3+1+inner,hotend_fan_duct_W-2*hotend_fan_duct_wall_T*inner,hotend_fan_duct_H-hotend_fan_duct_wall_T*(inner?1:-1)], center=true, r=1, rounded="x"); 
-		if(inner)
-		{
-			translate([base_motor_L-hotend_fan_T/2+1/2,(side_wall_T)/2,-hotend_fan_D/2-base_H+hotend_fan_z])
-				cube([hotend_fan_T+1, hotend_fan_D+1, hotend_fan_D+1], center=true);
-			translate([hotend_X, hotend_Y, -base_H-hotend_fan_duct_H-1])
-				cylinder(r=hotend_D/2+.5, h=hotend_fan_T+2);
-		}
-	}	
 }
 
-module hotend_base(extr=0)
-{
-	if (extruder_type=="j-head")
-	{
-		rotate([0,180,0])
-		union()
-		{
-			color("DimGray") rotate_extrude(convexity = 50, $fn=50)
-				polygon(jhead_rotate_poly);
-			if (extr)
-				for(i=[0,1])
-				mirror([i,0,0])
-				rotate([90,0,0])
-				linear_extrude(height=50)
-					polygon(jhead_rotate_poly);
-			translate(jhead_block_move)
-				color("Goldenrod") cube(jhead_block_dim);
-		}
-	}
-}
-
-module hotend_base_translated(extr=0,rot=[0,0,0])
-{
-	translate([hotend_X,hotend_Y,hotend_Z])
-	rotate(rot)
-		hotend_base(extr);
-}
-
+//Parts
 module base()
 {
 	color("SteelBlue")
@@ -454,7 +419,7 @@ module idler()
 		translate([idler_arm_L*i,0,-1])
 		union()
 		{
-			cylinder(r=3.1/2, h=13);
+			cylinder(r=(3.2+i*0.8)/2, h=13);
 		}
 		//bearing slot
 		translate([idler_arm_L,0,-motor_wall_T-hotend_X-.5])
@@ -477,6 +442,7 @@ module idler()
 	}
 }
 
+//Blocks
 module NEMA17_motor()
 {
 	translate([0,0,motor_L/2])
@@ -534,100 +500,136 @@ module hotend_fan()
 	}
 }
 
-//debug
-section="";
-
-module generate()
-{
-intersection()
+module _hotend_fan_duct_block(inner=0)
 {
 	union()
 	{
-		if (part=="assembly")
+		hull()
 		{
-				base();
-				translate([base_motor_L-base_L,0,-base_H])
-					hotend_bracket();
-				translate([-motor_wall_T-idler_washer_T,motor_hole_spacing/2,(motor_W+motor_hole_spacing)/2])
-				rotate([-idler_assembled_angle,0,0])
-				rotate([180,90,0])
-				{
-					idler();
-					//bearing
-					color("Silver")
-					translate([idler_arm_L,0,idler_T/2])
-						cylinder(r=bearing_D/2,h=bearing_L,center=true);
-					//washers
-					color("Silver")
-					for (i=[0,1])
-					translate([0,0,-idler_washer_T+(idler_T+idler_washer_T)*i])
-						cylinder(r=7/2,h=idler_washer_T,$fn=20);
-				}
-				translate([motor_L,0,motor_W/2])
-				rotate([0,-90,0])
-				union()
-				{
-					NEMA17_motor();
-					translate([0,0,motor_L-hotend_X+pulley_teeth_from_top-pulley_L])
-						MK_pulley();
-				}
-				hotend_base_translated(rot=[0,0,180]);
-				// filament
-				color("Red")
-				translate([hotend_X,hotend_Y,-5])
-					cylinder(r=filament/2,h=65, $fn=20);
-				//spring
-				color("Silver")
-				translate(spring_pos)
-					rotate([spring_rot,0,0])
-						cylinder(r=3.5,h=17);
-				translate([base_motor_L, side_wall_T/2, -hotend_fan_D-base_H+hotend_fan_z])
-				hotend_fan();
+			translate([base_motor_L-hotend_fan_duct_wall_T/2-hotend_fan_T+inner/2,(side_wall_T)/2,-hotend_fan_D/2-base_H+hotend_fan_z])
+				rounded_cube([hotend_fan_duct_wall_T+inner, hotend_fan_D-2*hotend_fan_duct_wall_T*inner, hotend_fan_D-2*hotend_fan_duct_wall_T*inner], center=true, r=1, rounded="x");
+			translate([hotend_X+hotend_D/2+3+1/2, hotend_Y, -hotend_fan_duct_H/2-base_H+hotend_fan_duct_wall_T/2])
+				rounded_cube([1, hotend_fan_duct_W-2*hotend_fan_duct_wall_T*inner,hotend_fan_duct_H-hotend_fan_duct_wall_T*(inner?1:-1)], center=true, r=1, rounded="x");
 		}
-		if (part=="base" || part=="plate")
+		translate([hotend_X+hotend_D/2+3-(hotend_D/2+3+1)/2, hotend_Y, -hotend_fan_duct_H/2-base_H+hotend_fan_duct_wall_T/2])
+			rounded_cube([hotend_D/2+3+1+inner,hotend_fan_duct_W-2*hotend_fan_duct_wall_T*inner,hotend_fan_duct_H-hotend_fan_duct_wall_T*(inner?1:-1)], center=true, r=1, rounded="x"); 
+		if(inner)
 		{
-			translate([0,40,base_motor_L])
-				rotate([0,90,0])
-					base();
+			translate([base_motor_L-hotend_fan_T/2+1/2,(side_wall_T)/2,-hotend_fan_D/2-base_H+hotend_fan_z])
+				cube([hotend_fan_T+1, hotend_fan_D+1, hotend_fan_D+1], center=true);
+			translate([hotend_X, hotend_Y, -base_H-hotend_fan_duct_H-1])
+				cylinder(r=hotend_D/2+.5, h=hotend_fan_T+2);
 		}
-		if (part=="bracket" || part=="plate" || part=="small")
-		{
-			translate([20,0,0])
-				rotate([0, -90, 90])
-					hotend_bracket();
-		}
-		if (part=="idler" || part=="plate" || part=="small")
-		{
-			translate([25,-40,0])
-				rotate([0,0,35])
-					idler();
-		}
-	}
-	//debug
-	if (section=="y")
-	{
-		translate([0,85,0])
-			cube([150,150,200], center=true);
-	}
-	if (section=="x")
-	{
-		translate([65,0,0])
-			cube([150,150,200], center=true);
-	}
-	if (section=="z")
-	{
-		translate([0,0,100+21])
-			cube([150,150,200], center=true);
-	}
-}
+	}	
 }
 
-if (version) // mirror
-	mirror([1,0,0])
-		generate();
-else
-	generate();
+module hotend_base(extr=0)
+{
+	if (extruder_type=="j-head")
+	{
+		rotate([0,180,0])
+		union()
+		{
+			color("DimGray") rotate_extrude(convexity = 50, $fn=50)
+				polygon(jhead_rotate_poly);
+			if (extr)
+				for(i=[0,1])
+				mirror([i,0,0])
+				rotate([90,0,0])
+				linear_extrude(height=50)
+					polygon(jhead_rotate_poly);
+			translate(jhead_block_move)
+				color("Goldenrod") cube(jhead_block_dim);
+		}
+	}
+}
 
+module hotend_base_translated(extr=0,rot=[0,0,0])
+{
+	translate([hotend_X,hotend_Y,hotend_Z])
+	rotate(rot)
+		hotend_base(extr);
+}
 
+//Tool modules
+module fillet(r, h, pos, rot)
+{
+	translate(pos)
+	rotate(rot)
+	translate([-r,-r,0])
+		difference()
+		{
+			translate([0,0,-h/2])
+				cube([r+1,r+1,h]);
+			cylinder(r=r, h=h+2, center=true);
+		}
+}
 
+module __rounded_cube(dim, r, rounded)
+{
+	difference()
+	{
+		cube(dim, center=true);
+		if(search("x", rounded))
+			for(y=[-1,1])
+			for(z=[-1,1])
+			scale([1,y,z])
+			fillet(r=r, h=dim[0]+2, pos=[0, dim[1]/2, dim[2]/2], rot=[0,-90,0]);
+		if(search("y", rounded))
+			for(x=[-1,1])
+			for(z=[-1,1])
+			scale([x,1,z])
+			fillet(r=r, h=dim[1]+2, pos=[dim[0]/2, 0, dim[2]/2], rot=[90,0,0]);
+		if(search("z", rounded))
+			for(x=[-1,1])
+			for(y=[-1,1])
+			scale([x,y,1])
+			fillet(r=r, h=dim[2]+2, pos=[dim[0]/2, dim[1]/2, 0], rot=[0,0,0]);
+		if(rounded=="xyz")
+			for(x=[-1,1])
+			for(y=[-1,1])
+			for(z=[-1,1])
+			scale([x,y,z])
+			translate(dim/2)
+			translate([-r,-r,-r])
+			difference()
+			{
+				cube([r+1,r+1,r+1]);
+				sphere(r=r);
+			}
+	}
+}
+
+module rounded_cube(dim=[], r=0, rounded="", center=false)
+{
+	if(center)
+	{
+		__rounded_cube(dim=dim, r=r, rounded=rounded);
+	}
+	else
+	{
+		translate(dim/2)
+		__rounded_cube(dim=dim, r=r, rounded=rounded);
+	}
+}
+t_ang=teardrop_angle;
+
+module supported_cylinder(r=1,h=1,z_rot=0, center=false)
+{
+	union()
+	{
+		cylinder(r=r,h=h,center=center);
+		if (support)
+		rotate([0,0,z_rot])
+		linear_extrude(height=h, center=center)
+		if(support_cylinder_style=="trapezoid")
+		{
+			polygon([[r*sin(t_ang),r*cos(t_ang)], [r, r*(cos(t_ang)-tan(t_ang)*(1-sin(t_ang)))], [r, -r*(cos(t_ang)-tan(t_ang)*(1-sin(t_ang)))],[r*sin(t_ang),-r*cos(t_ang)]]);
+		}
+		else if(support_cylinder_style=="teardrop")
+		{
+			polygon([[r*sin(t_ang),r*cos(t_ang)],[r/sin(t_ang),0],[r*sin(t_ang),-r*cos(t_ang)]]);
+		}		
+	}
+}
 
